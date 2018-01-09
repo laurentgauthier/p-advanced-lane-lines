@@ -67,9 +67,48 @@ To demonstrate this step, I will describe how I apply the distortion correction 
 
 ![undistorted image][image2]
 
+In the implementation of the pipeline this step occurs after the thresholding, but to ease visual
+verification of the distortion correction this step is illustrated first.
+
 ### Thresholding
 
-I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
+The thresholding algorithm used is OpenCV's Gaussian adpative thresholding which is doing threshold
+against the local mean, rather than use a global static threshold value that would not work
+in all lighting condition.
+
+Prior to thresholding the image a blur is run to reduce the noise in the image.
+
+In order to improve the quality of the lane detection this code relies on the following three observations:
+
+* White lines can be detected by using just the red channel in RGB color space.
+* Yellow lines can be detected by using just the blue channel in RBG color space.
+* All types of lines can be detected using the S channel in HLS color space.
+
+So in order to leverage these three facts the three are combined and the thresholding algorithm is run on
+this combination (see the following code in `threshold.py`:
+
+```python
+def threshold_image(image):
+    # Blur the image
+    kernel_size = 3
+    blurred = cv2.GaussianBlur(image, (kernel_size, kernel_size), 0)
+    R = blurred[:,:,1] # Good for white lines.
+    B = blurred[:,:,1] # Good for yellow lines.
+    RB = cv2.addWeighted(R, 0.5, B, 0.5, 0.0)
+
+    # Extract the S channel.
+    hls = cv2.cvtColor(blurred, cv2.COLOR_RGB2HLS)
+    S = hls[:,:,2]
+
+    # Run an adaptive Gaussian threshold on the combination of S and R+B.
+    binary = cv2.adaptiveThreshold(cv2.addWeighted(S, 0.5, RB, 0.5, 0.0),\
+                                   255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
+                                   cv2.THRESH_BINARY, 33, -10)
+    return binary
+
+```
+
+Here's an example of the output for this step:
 
 ![image afer thresholding][image3]
 
