@@ -17,7 +17,7 @@ The goals / steps of this project are the following:
 [image2]: ./output_images/test1-undistorted.jpg "Image with distortion removed"
 [image3]: ./output_images/test1-threshold.jpg "Image with Threshold"
 [image4]: ./output_images/test1-topview.jpg "Top view"
-[image5]: ./output_images/lane-finding-final.jpg "Final Image Tracking"
+[image5]: ./output_images/lane-finding-final.png "Final Image Tracking"
 [video1]: ./project_result.mp4 "Project Video Result"
 [video2]: ./challenge_result.mp4 "Challenge Video Result"
 
