@@ -16,7 +16,8 @@ The goals / steps of this project are the following:
 [image1]: ./test_images/test1.jpg "Original Road Image"
 [image2]: ./output_images/test1-undistorted.jpg "Image with distortion removed"
 [image3]: ./output_images/test1-threshold.jpg "Image with Threshold"
-[image4]: ./output_images/test1-topview.jpg "Output"
+[image4]: ./output_images/test1-topview.jpg "Top view"
+[image5]: ./output_images/lane-finding-final.jpg "Final Image Tracking"
 [video1]: ./project_result.mp4 "Project Video Result"
 [video2]: ./challenge_result.mp4 "Challenge Video Result"
 
@@ -106,6 +107,7 @@ I verified that my perspective transform was working as expected by drawing the 
 
 All the lane finding code is found in `lanefind.py`, and is invoked from the main pipeline.
 
+![alt text][image5]
 
 ## Pipeline (video)
 
