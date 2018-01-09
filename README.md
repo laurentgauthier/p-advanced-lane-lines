@@ -40,8 +40,8 @@ python3 advanced-lane-detection.py project_video.mp4 project_result.mp4
 The implementation of the individual steps of the pipeline are imported from the following files:
 
 * `calibration.py`: camera calibration functions
-* `transform.py`: perspective warping functions
 * `threshold.py`: thresholding of lanes
+* `transform.py`: perspective warping functions
 * `lanefind.py`: lane finding function, polynomial curve fitting and radius calculation
 * `video.py`: utility functions for the video processing
 
@@ -84,8 +84,8 @@ In order to improve the quality of the lane detection this code relies on the fo
 * Yellow lines can be detected by using just the blue channel in RBG color space.
 * All types of lines can be detected using the S channel in HLS color space.
 
-So in order to leverage these three facts the three are combined and the thresholding algorithm is run on
-this combination (see the following code in `threshold.py`:
+So in order to leverage these three facts the three channels are summed and the thresholding algorithm
+is run on this combination (see the use of `cv2.addWeighted` in the following code in `threshold.py`):
 
 ```python
 def threshold_image(image):
@@ -114,37 +114,56 @@ Here's an example of the output for this step:
 
 ### Top View
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+The code for perspective transform is found in `transform.py` and uses OpenCV functions to
+create a Bird's Eye view of the road in front of the car.
 
 ```python
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
+def compute_transform_matrices():
+    # This is the rectangle I measured on an undistored image from the video
+    # where the lanes lines are pretty much centered and straight.
+    bottom_left  = (190, 720)
+    top_left     = (587, 455)
+    top_right    = (703, 455)
+    bottom_right = (1130, 720)
+
+    # Location of the rectangle in the original undistorted image.
+    src = np.float32([ top_left, top_right, bottom_right, bottom_left ])
+
+    # Leave a margin on the left and right of the top view, making the top-view a 720x720.
+    margin = 280
+    dst = np.float32([
+        [margin,               0],
+        [image_size[1]-margin, 0], 
+        [image_size[1]-margin, image_size[0]], 
+        [margin,               image_size[0]],
+    ])
+
+    # Compute the transform matrix and the inverse transform matrix.
+    transformMatrix       = cv2.getPerspectiveTransform(src, dst)
+    inverseTranformMatrix = cv2.getPerspectiveTransform(dst, src)
+
+    return transformMatrix, inverseTranformMatrix
 ```
 
-This resulted in the following source and destination points:
+This was verified by using the perspective transform on test images showing a piece of
+straight road and checking that the lanes appear parallel in the warped image.
 
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
-
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
+Here is the ouput for our test image (shown without thresholding):
 
 ![alt text][image4]
 
 ### Lane finding
 
 All the lane finding code is found in `lanefind.py`, and is invoked from the main pipeline.
+
+It does in one step fit a polynomial curve for each lane (left and right), compute the radius
+on each side.
+
+The code for lane detection return an image (Bird's Eye view) coloring the detected lane space.
+
+The code in `advance-lane-detection.py` (main pipeline implementation) then applies the
+inverse perspective transform and overlays it on top of the original image resulting in the
+following type of output:
 
 ![alt text][image5]
 
@@ -165,4 +184,44 @@ Results when applied on the challenge video:
 
 ## Discussion
 
-...
+This code works nicely on both the project and challenge video, but it does fail miserably on
+the harder challenge video.
+
+Here are some thoughts on what could be done to improve the quality of the lane tracking.
+
+Not all these ideas require software changes, as some could be implemented as physical changes.
+
+### Tracking in sharp turns
+
+When the car is going through sharp turns the left and/or right line can come out sight of the
+camera at times.
+
+The software should be improved to handle these cases, and more generally should be improved
+to provide a more robust reponse for the cases when the road marking can be partially missing.
+
+### Image stabilization
+
+In experiments I created a number of Bird's Eye view video for debugging purpose and it was
+quite visible that the lanes were wobbly mostly due to the vehicle suspension rocking forward
+and backward.
+
+Some form of image stabilization using either a pyshical gimbal or some form of software stabilization
+could be important to create a more robust lane tracking algorithm when such adverse lighting
+conditions occur.
+
+### Reflection on the windshield
+
+In the harder challenge video the thresholding algorithm is sometimes disrupted by the challenging
+lighting conditions.
+
+While some software changes and smarter tuning of thresholding parameters could probably be done
+there is at least one issue that would require physical changes to the in-car video capture system.
+
+The camera should be located and encased in such a way that there are no reflecting on the windshield
+introducing avoidable artefacts in the image.
+
+### Sensor Fusion
+
+Using for example of data from the vehicle odometry and wheels position in addition to the
+video images would allow the creation of a more robust lane tracking system, especially in situations
+where even the human eye would have trouble tracking the lanes.
