@@ -23,7 +23,7 @@ The goals / steps of this project are the following:
 
 # Code Overview
 
-The main pipeline implementation is found in the `advanced-line-detection.py` file,
+The main pipeline implementation is found in the `advanced-lane-detection.py` file,
 where the steps of the pipeline are implemented, including the camera calibration.
 
 This script can be run using `python3` and takes two parameters:

@@ -105,23 +105,50 @@ def initial_lane_finding(binary_warped):
 
     # Draw the lane onto the warped blank image
     cv2.fillPoly(color_warp, np.int_([pts]), (0,255, 0))
-    return color_warp
 
-# Unused for now.
-def compute_radius():
+    # Compute the left and right radius, as well as the car offset from the center
+    # of the lane.
+    left_curve_radius_m, right_curve_radius_m, car_center_offset_m = compute_radius_and_center_offset(leftx, rightx, lefty, righty)
+
+    return color_warp, left_curve_radius_m, right_curve_radius_m, car_center_offset_m
+
+def compute_radius_and_center_offset(leftx, rightx, lefty, righty):
+    global left_fit
+    global right_fit
     # Define conversions in x and y from pixels space to meters
     ym_per_pix = 30/720 # meters per pixel in y dimension
     xm_per_pix = 3.7/700 # meters per pixel in x dimension
 
     # Fit new polynomials to x,y in world space
-    left_fit_cr = np.polyfit(ploty*ym_per_pix, leftx*xm_per_pix, 2)
-    right_fit_cr = np.polyfit(ploty*ym_per_pix, rightx*xm_per_pix, 2)
+    left_fit_m = np.polyfit(lefty*ym_per_pix, leftx*xm_per_pix, 2)
+    right_fit_m = np.polyfit(righty*ym_per_pix, rightx*xm_per_pix, 2)
+
     # Calculate the new radii of curvature
     y_eval = 720 # We want the curvature at the bottom of the image
-    left_curverad = ((1 + (2*left_fit_cr[0]*y_eval*ym_per_pix + left_fit_cr[1])**2)**1.5) / np.absolute(2*left_fit_cr[0])
-    right_curverad = ((1 + (2*right_fit_cr[0]*y_eval*ym_per_pix + right_fit_cr[1])**2)**1.5) / np.absolute(2*right_fit_cr[0])
+    left_curve_radius_m = ((1 + (2*left_fit_m[0]*y_eval*ym_per_pix + left_fit_m[1])**2)**1.5) / np.absolute(2*left_fit_m[0])
+    right_curve_radius_m = ((1 + (2*right_fit_m[0]*y_eval*ym_per_pix + right_fit_m[1])**2)**1.5) / np.absolute(2*right_fit_m[0])
     # Now our radius of curvature is in meters
-    #print(left_curverad, 'm', right_curverad, 'm')
+
+    # Figure out the position of the car in the lane. For this we determine
+    # the pixel x position of the left and right lanes and then proceed to
+    # determine how off center the car is and convert this in meters
+    # assuming the lane width is about 3.7m.
+    #
+    # Negative values indicate that the car is off center on the right,
+    # positive indicate an offset to the left.
+    #
+    y_eval = 720 # We want the curvature at the bottom of the image
+    left_lane_position_x = left_fit[0]*y_eval**2 + left_fit[1]*y_eval + left_fit[2]
+    right_lane_position_x = right_fit[0]*y_eval**2 + right_fit[1]*y_eval + right_fit[2]
+    image_middle_x = 1280/2
+    lane_center_x = (right_lane_position_x + left_lane_position_x)/2
+    lane_width_pixels = (right_lane_position_x - left_lane_position_x)
+    # First compute the offset from the center as percent of the lane width
+    car_center_offset_percent = (image_middle_x - lane_center_x) / lane_width_pixels
+    # Then convert that to meters by assuming the lane width is about 3.7m
+    car_center_offset_m = 3.7 * car_center_offset_percent
+
+    return left_curve_radius_m, right_curve_radius_m, car_center_offset_m
 
 def incremental_lane_finding(binary_warped):
     global left_fit
@@ -152,6 +179,10 @@ def incremental_lane_finding(binary_warped):
     left_fit = np.polyfit(lefty, leftx, 2)
     right_fit = np.polyfit(righty, rightx, 2)
 
+    # TODO Implement sanity checks on the detection results to decide to
+    # ignore the bogus detection results and possibly revert to a full
+    # initial detection for the processin of the next frame.
+
     # Generate x and y values for plotting
     ploty = np.linspace(0, binary_warped.shape[0]-1, binary_warped.shape[0] )
     left_fitx = left_fit[0]*ploty**2 + left_fit[1]*ploty + left_fit[2]
@@ -169,4 +200,8 @@ def incremental_lane_finding(binary_warped):
     # Draw the lane onto the warped blank image
     cv2.fillPoly(color_warp, np.int_([pts]), (0,255, 0))
 
-    return color_warp
+    # Compute the left and right radius, as well as the car offset from the center
+    # of the lane.
+    left_curve_radius_m, right_curve_radius_m, car_center_offset_m = compute_radius_and_center_offset(leftx, rightx, lefty, righty)
+
+    return color_warp, left_curve_radius_m, right_curve_radius_m, car_center_offset_m
