@@ -14,9 +14,9 @@ The goals / steps of this project are the following:
 [//]: # (Image References)
 
 [image1]: ./test_images/test1.jpg "Original Road Image"
-[image2]: ./output_images/test1-undistorted.jpg "Output"
-[image3]: ./output_images/test1-topview.jpg "Output"
-[image4]: ./output_images/test1-threshold.jpg "Output"
+[image2]: ./output_images/test1-undistorted.jpg "Image with distortion removed"
+[image3]: ./output_images/test1-threshold.jpg "Image with Threshold"
+[image4]: ./output_images/test1-topview.jpg "Output"
 [video1]: ./project_result.mp4 "Project Video Result"
 [video2]: ./challenge_result.mp4 "Challenge Video Result"
 
@@ -50,30 +50,27 @@ when making code updates.
 Finally a `Makefile` is provided to run tests of individual functions on the images found
 under the `test_images` directory.
 
-# Camera Calibration
-
-#### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
-
-The code for this step is contained in the first code cell of the IPython notebook located in "./examples/example.ipynb" (or in lines # through # of the file called `some_file.py`).  
-
-I start by preparing "object points", which will be the (x, y, z) coordinates of the chessboard corners in the world. Here I am assuming the chessboard is fixed on the (x, y) plane at z=0, such that the object points are the same for each calibration image.  Thus, `objp` is just a replicated array of coordinates, and `objpoints` will be appended with a copy of it every time I successfully detect all chessboard corners in a test image.  `imgpoints` will be appended with the (x, y) pixel position of each of the corners in the image plane with each successful chessboard detection.  
-
-I then used the output `objpoints` and `imgpoints` to compute the camera calibration and distortion coefficients using the `cv2.calibrateCamera()` function.  I applied this distortion correction to the test image using the `cv2.undistort()` function and obtained this result: 
-
-![alt text][image1]
-
 ## Pipeline (single images)
+
+To illustrate the individual steps in the pipeline we will show here the various steps involved
+and are illustrated in this README using the following original test image.
+
+![original image][image1]
+
+The result of the various algorithms for other test images can be found under the `output_images`
+for those who are curious :-).
 
 ### Correction of Distortion
 
 To demonstrate this step, I will describe how I apply the distortion correction to one of the test images like this one:
-![alt text][image1]
+
+![undistorted image][image2]
 
 ### Thresholding
 
 I used a combination of color and gradient thresholds to generate a binary image (thresholding steps at lines # through # in `another_file.py`).  Here's an example of my output for this step.  (note: this is not actually from one of the test images)
 
-![alt text][image3]
+![image afer thresholding][image3]
 
 ### Top View
 
@@ -103,7 +100,7 @@ This resulted in the following source and destination points:
 
 I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
 
-![alt text][image3]
+![alt text][image4]
 
 ### Lane finding
 
@@ -118,11 +115,11 @@ of them.
 
 Results when applied on the project video:
 
-![project video result][video1]
+* [project video result][video1]
 
 Results when applied on the challenge video:
 
-![challenge video result][video2]
+* [challenge video result][video2]
 
 
 ## Discussion
